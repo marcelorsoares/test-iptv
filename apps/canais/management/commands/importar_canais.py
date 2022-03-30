@@ -17,8 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         m3u8_obj = m3u8.load(settings.BASE_DIR + '/importar/{}'.format(options['filename']))
-        x = 1
-        for channel in m3u8_obj.segments:
+        for x, channel in enumerate(m3u8_obj.segments, start=1):
             name = channel.title.split(',')[-1]
             name = name[:255]
             try:
@@ -41,22 +40,21 @@ class Command(BaseCommand):
             try:
                 canal = Canal.objects.get(uri=uri)
 
-                if options['test_stream']:
-                    if canal.status == 200:
-                        response = requests.get(uri, stream=True)
-                        size = 0
-                        status = 0
-                        for chunk in response.iter_content(256):
-                            size += len(chunk)
-                            if size > 512:
-                                print('size: ', size)
-                                status = 200
-                                break
-                        if status == 0:
-                            status = response.status_code
-                        canal.status = status
-                        canal.save()
-                        print('ID: {} - status: {}'.format(canal.id, status))
+                if options['test_stream'] and canal.status == 200:
+                    response = requests.get(uri, stream=True)
+                    size = 0
+                    status = 0
+                    for chunk in response.iter_content(256):
+                        size += len(chunk)
+                        if size > 512:
+                            print('size: ', size)
+                            status = 200
+                            break
+                    if status == 0:
+                        status = response.status_code
+                    canal.status = status
+                    canal.save()
+                    print('ID: {} - status: {}'.format(canal.id, status))
 
                 print('ID: {}'.format(canal.id))
             except Canal.DoesNotExist:
@@ -144,5 +142,4 @@ class Command(BaseCommand):
                     print(e)
                     canal = Canal(name=name, logo=logo, uri=uri, group_title=group_title, status=status)
                     canal.save()
-            x += 1
 
